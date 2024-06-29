@@ -160,7 +160,7 @@ def on_open(ws):
                     time.sleep(1)
                     break
                 # 模拟音频采样间隔
-                # time.sleep(intervel)
+                time.sleep(intervel)
         ws.close()
 
     thread.start_new_thread(run, ())
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     time1 = datetime.now()
     wsParam = Ws_Param(APPID='72cf37b5', APISecret='NTI4MmVjMDRlZTk5ZjIxMGUxNjhjYWY0',
                        APIKey='851fbce2b48a1ccbb09ec76ba2a80258',
-                       AudioFile=r'/workspaces/ydnksqhd-Z_emotion.github.io/sound_track/iat_pcm_16k.pcm')
+                       AudioFile=r'/workspaces/ydnksqhd-Z_emotion.github.io/sound_track/asr_example_zh.pcm')
     print(wsParam.BusinessArgs)
     websocket.enableTrace(False)
     wsUrl = wsParam.create_url()
