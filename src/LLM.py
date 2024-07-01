@@ -28,15 +28,13 @@ spark = ChatSparkLLM(
 def communicate():
     data = request.json
     words = data.get('words')
-    handler = ChunkPrintHandler()
     messages = [ChatMessage(
         role="user",
         content=words
     )]
     handler = ChunkPrintHandler()
     a = spark.generate([messages], callbacks=[handler])
-    print(a)
     return jsonify({'context': a.generations[0][0].text}), 200
 
-app.run(port=1401)
+app.run(port=5003)
 
