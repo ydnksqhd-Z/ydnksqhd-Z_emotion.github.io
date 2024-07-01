@@ -37,10 +37,9 @@ app = Flask(__name__)
 
 res = []
 
-class Param(object):
+class _Param(object):
     # 初始化
     def __init__(self, APPID, APIKey, APISecret, AudioFile):
-
         self.APPID = APPID
         self.APIKey = APIKey
         self.APISecret = APISecret
@@ -49,7 +48,7 @@ class Param(object):
         # 公共参数(common)
         self.CommonArgs = {"app_id": self.APPID}
 
-        # 业务参数(business)，更多个性化参数可在官网查看
+        # 业务参数(business)
         self.BusinessArgs = {"domain": "iat", "language": "zh_cn", "accent": "mandarin", "vinfo":1,"vad_eos":10000}
 
     # 生成url
@@ -68,7 +67,6 @@ class Param(object):
         # 进行hmac-sha256进行加密
         signature_sha = hmac.new(self.APISecret.encode('utf-8'), signature_origin.encode('utf-8'), digestmod=hashlib.sha256).digest()
         signature_sha = base64.b64encode(signature_sha).decode(encoding='utf-8')
-
         authorization_origin = "api_key=\"%s\", algorithm=\"%s\", headers=\"%s\", signature=\"%s\"" % (self.APIKey, "hmac-sha256", "host date request-line", signature_sha)
         authorization = base64.b64encode(authorization_origin.encode('utf-8')).decode(encoding='utf-8')
 
@@ -86,7 +84,7 @@ class Param(object):
 
 
 # 收到websocket消息的处理
-def on_message(ws, message):
+def _on_message(ws, message):
     try:
         code = json.loads(message)["code"]
         sid = json.loads(message)["sid"]
@@ -110,18 +108,18 @@ def on_message(ws, message):
 
 
 # 收到websocket错误的处理
-def on_error(ws, error):
+def _on_error(ws, error):
     print("### error:", error)
 
 
 # 收到websocket关闭的处理
-def on_close(ws,x,y):
+def _on_close(ws,x,y):
     print("### closed ###")
 
 
 # 收到websocket连接建立的处理
-def create_on_open(wsParam):
-    def on_open(ws):
+def _create_on_open(wsParam):
+    def _on_open(ws):
         def run(*args):
             frameSize = 8000  # 每一帧的音频大小
             intervel = 0.04  # 发送音频间隔(单位:s)
@@ -164,7 +162,7 @@ def create_on_open(wsParam):
             ws.close()
 
         thread.start_new_thread(run, ())
-    return on_open
+    return _on_open
 
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
@@ -178,15 +176,15 @@ def transcribe():
     # if not all([AudioFile]):
     #     return jsonify({'error': 'Missing data'}), 400
     
-    wsParam = Param(APPID=APP_ID, APISecret=API_SECRET, APIKey=API_KEY, AudioFile='output.pcm')
+    wsParam = _Param(APPID=APP_ID, APISecret=API_SECRET, APIKey=API_KEY, AudioFile='sound_track/output.pcm')
 
     websocket.enableTrace(False)
     wsUrl = wsParam.create_url()
-    ws = websocket.WebSocketApp(wsUrl, on_message=on_message, on_error=on_error, on_close=on_close, on_open=create_on_open(wsParam))
+    ws = websocket.WebSocketApp(wsUrl, on_message=_on_message, on_error=_on_error, on_close=_on_close, on_open=_create_on_open(wsParam))
     ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
     return jsonify({'transcription': res[0]}), 200
     
 
-# if __name__ == "__main__":
-app.run(port=5001)
+def unit():
+    app.run(port=5001)

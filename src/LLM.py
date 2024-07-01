@@ -36,5 +36,5 @@ def communicate():
     a = spark.generate([messages], callbacks=[handler])
     return jsonify({'context': a.generations[0][0].text}), 200
 
-app.run(port=5003)
-
+def unit():
+    app.run(port=5003)
