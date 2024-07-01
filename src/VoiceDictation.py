@@ -1,16 +1,5 @@
 # -*- coding:utf-8 -*-
 #
-#   author: iflytek
-#
-#  本demo测试时运行的环境为：Windows + Python3.7
-#  本demo测试成功运行时所安装的第三方库及其版本如下，您可自行逐一或者复制到一个新的txt文件利用pip一次性安装：
-#   cffi==1.12.3
-#   gevent==1.4.0
-#   greenlet==0.4.15
-#   pycparser==2.19
-#   six==1.12.0
-#   websocket==0.2.1
-#   websocket-client==0.56.0
 #
 #  语音听写流式 WebAPI 接口调用示例 接口文档（必看）：https://doc.xfyun.cn/rest_api/语音听写（流式版）.html
 #  webapi 听写服务参考帖子（必看）：http://bbs.xfyun.cn/forum.php?mod=viewthread&tid=38947&extra=
@@ -21,6 +10,7 @@
 #  可添加语种或方言，添加后会显示该方言的参数值
 #  错误码链接：https://www.xfyun.cn/document/error-code （code返回错误码时必看）
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+from flask import Flask, request, jsonify
 import websocket
 import datetime
 import hashlib
@@ -43,9 +33,11 @@ APP_ID = '72cf37b5'
 API_SECRET = 'NTI4MmVjMDRlZTk5ZjIxMGUxNjhjYWY0'
 API_KEY = '851fbce2b48a1ccbb09ec76ba2a80258'
 
+app = Flask(__name__)
+
 res = []
 
-class Ws_Param(object):
+class Param(object):
     # 初始化
     def __init__(self, APPID, APIKey, APISecret, AudioFile):
         self.APPID = APPID
@@ -100,7 +92,7 @@ def on_message(ws, message):
         if code != 0:
             errMsg = json.loads(message)["message"]
             # print("sid:%s call error:%s code is:%s" % (sid, errMsg, code))
-            res.append(json.dumps({"status" : 1, "data" : errMsg}))
+            res.append(errMsg)
 
         else:
             data = json.loads(message)["data"]["result"]["ws"]
@@ -110,10 +102,10 @@ def on_message(ws, message):
                 for w in i["cw"]:
                     result += w["w"]
             # print("sid:%s call success!,data is:%s" % (sid, json.dumps(data, ensure_ascii=False)))
-            res.append(json.dumps({"status" : 0, "data" : result}))
+            res.append(result)
     except Exception as e:
         # print("receive msg,but parse exception:", e)
-        res.append(json.dumps({"status" : 1, "data" : e}))
+        res.append(e)
 
 
 
@@ -175,9 +167,15 @@ def create_on_open(wsParam):
         thread.start_new_thread(run, ())
     return on_open
 
-def transcribe(AudioFile):
+@app.route('/transcribe', methods=['POST'])
+def transcribe():
+    data = request.json
+    AudioFile = data.get('AudioFile')
+
+    if not all([AudioFile]):
+        return jsonify({'error': 'Missing data'}), 400
     
-    wsParam = Ws_Param(APPID=APP_ID, APISecret=API_SECRET, APIKey=API_KEY, AudioFile=AudioFile)
+    wsParam = Param(APPID=APP_ID, APISecret=API_SECRET, APIKey=API_KEY, AudioFile=AudioFile)
 
     websocket.enableTrace(False)
     wsUrl = wsParam.create_url()
@@ -185,4 +183,8 @@ def transcribe(AudioFile):
     ws.on_open = create_on_open(wsParam)
     ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
-    return res
+    return jsonify({'transcription': res}), 200
+    
+
+# if __name__ == "__main__":
+app.run(port=1300)
