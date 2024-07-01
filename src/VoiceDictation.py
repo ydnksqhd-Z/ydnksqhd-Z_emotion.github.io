@@ -40,6 +40,7 @@ res = []
 class Param(object):
     # 初始化
     def __init__(self, APPID, APIKey, APISecret, AudioFile):
+
         self.APPID = APPID
         self.APIKey = APIKey
         self.APISecret = APISecret
@@ -47,12 +48,14 @@ class Param(object):
 
         # 公共参数(common)
         self.CommonArgs = {"app_id": self.APPID}
+
         # 业务参数(business)，更多个性化参数可在官网查看
         self.BusinessArgs = {"domain": "iat", "language": "zh_cn", "accent": "mandarin", "vinfo":1,"vad_eos":10000}
 
     # 生成url
     def create_url(self):
         url = 'wss://ws-api.xfyun.cn/v2/iat'
+
         # 生成RFC1123格式的时间戳
         now = datetime.now()
         date = format_date_time(mktime(now.timetuple()))
@@ -61,26 +64,24 @@ class Param(object):
         signature_origin = "host: " + "ws-api.xfyun.cn" + "\n"
         signature_origin += "date: " + date + "\n"
         signature_origin += "GET " + "/v2/iat " + "HTTP/1.1"
+
         # 进行hmac-sha256进行加密
-        signature_sha = hmac.new(self.APISecret.encode('utf-8'), signature_origin.encode('utf-8'),
-                                 digestmod=hashlib.sha256).digest()
+        signature_sha = hmac.new(self.APISecret.encode('utf-8'), signature_origin.encode('utf-8'), digestmod=hashlib.sha256).digest()
         signature_sha = base64.b64encode(signature_sha).decode(encoding='utf-8')
 
-        authorization_origin = "api_key=\"%s\", algorithm=\"%s\", headers=\"%s\", signature=\"%s\"" % (
-            self.APIKey, "hmac-sha256", "host date request-line", signature_sha)
+        authorization_origin = "api_key=\"%s\", algorithm=\"%s\", headers=\"%s\", signature=\"%s\"" % (self.APIKey, "hmac-sha256", "host date request-line", signature_sha)
         authorization = base64.b64encode(authorization_origin.encode('utf-8')).decode(encoding='utf-8')
+
         # 将请求的鉴权参数组合为字典
         v = {
             "authorization": authorization,
             "date": date,
             "host": "ws-api.xfyun.cn"
         }
+
         # 拼接鉴权参数，生成url
         url = url + '?' + urlencode(v)
-        # print("date: ",date)
-        # print("v: ",v)
-        # 此处打印出建立连接时候的url,参考本demo的时候可取消上方打印的注释，比对相同参数时生成的url与自己代码生成的url是否一致
-        # print('websocket url :', url)
+
         return url
 
 
@@ -93,7 +94,6 @@ def on_message(ws, message):
             errMsg = json.loads(message)["message"]
             # print("sid:%s call error:%s code is:%s" % (sid, errMsg, code))
             res.append(errMsg)
-
         else:
             data = json.loads(message)["data"]["result"]["ws"]
             # print(json.loads(message))
@@ -115,7 +115,7 @@ def on_error(ws, error):
 
 
 # 收到websocket关闭的处理
-def on_close(ws,a,b):
+def on_close(ws,x,y):
     print("### closed ###")
 
 
@@ -137,7 +137,6 @@ def create_on_open(wsParam):
                     # 发送第一帧音频，带business 参数
                     # appid 必须带上，只需第一帧发送
                     if status == STATUS_FIRST_FRAME:
-
                         d = {"common": wsParam.CommonArgs,
                             "business": wsParam.BusinessArgs,
                             "data": {"status": 0, "format": "audio/L16;rate=16000",
@@ -179,8 +178,7 @@ def transcribe():
 
     websocket.enableTrace(False)
     wsUrl = wsParam.create_url()
-    ws = websocket.WebSocketApp(wsUrl, on_message=on_message, on_error=on_error, on_close=on_close)
-    ws.on_open = create_on_open(wsParam)
+    ws = websocket.WebSocketApp(wsUrl, on_message=on_message, on_error=on_error, on_close=on_close, on_open=create_on_open(wsParam))
     ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
     return jsonify({'transcription': res}), 200
