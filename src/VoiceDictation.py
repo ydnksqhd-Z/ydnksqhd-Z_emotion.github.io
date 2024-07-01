@@ -49,7 +49,7 @@ class _Param(object):
         self.CommonArgs = {"app_id": self.APPID}
 
         # 业务参数(business)
-        self.BusinessArgs = {"domain": "iat", "language": "zh_cn", "accent": "mandarin", "vinfo":1,"vad_eos":10000}
+        self.BusinessArgs = {"domain": "iat", "language": "zh_cn", "accent": "mandarin", "vinfo":1, "vad_eos":10000}
 
     # 生成url
     def create_url(self):
@@ -172,9 +172,6 @@ def transcribe():
 
     with open('sound_track/output.pcm', 'wb') as f:
         f.write(AudioFile)
-
-    # if not all([AudioFile]):
-    #     return jsonify({'error': 'Missing data'}), 400
     
     wsParam = _Param(APPID=APP_ID, APISecret=API_SECRET, APIKey=API_KEY, AudioFile='sound_track/output.pcm')
 
