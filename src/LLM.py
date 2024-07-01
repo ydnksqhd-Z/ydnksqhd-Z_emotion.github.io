@@ -1,6 +1,11 @@
 from sparkai.llm.llm import ChatSparkLLM, ChunkPrintHandler
 from sparkai.core.messages import ChatMessage
 
+from flask import Flask, request, jsonify
+import json
+
+app = Flask(__name__)
+
 #星火认知大模型Spark Max的URL值，其他版本大模型URL值请前往文档（https://www.xfyun.cn/doc/spark/Web.html）查看
 SPARKAI_URL = 'wss://spark-api.xf-yun.com/v3.5/chat'
 #星火认知大模型调用秘钥信息，请前往讯飞开放平台控制台（https://console.xfyun.cn/services/bm35）查看
@@ -19,7 +24,19 @@ spark = ChatSparkLLM(
     streaming=False,
 )
 
-def communicate(messages):
+@app.route('/LLM', methods=['POST'])
+def communicate():
+    data = request.json
+    words = data.get('words')
+    handler = ChunkPrintHandler()
+    messages = [ChatMessage(
+        role="user",
+        content=words
+    )]
     handler = ChunkPrintHandler()
     a = spark.generate([messages], callbacks=[handler])
-    return a
+    print(a)
+    return jsonify({'context': a.generations[0][0].text}), 200
+
+app.run(port=1401)
+

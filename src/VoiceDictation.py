@@ -169,19 +169,23 @@ def create_on_open(wsParam):
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
     data = request.json
-    AudioFile = data.get('AudioFile')
+    base64_audio = data.get('AudioFile')
+    AudioFile = base64.b64decode(base64_audio)
 
-    if not all([AudioFile]):
-        return jsonify({'error': 'Missing data'}), 400
+    with open('sound_track/output.pcm', 'wb') as f:
+        f.write(AudioFile)
+
+    # if not all([AudioFile]):
+    #     return jsonify({'error': 'Missing data'}), 400
     
-    wsParam = Param(APPID=APP_ID, APISecret=API_SECRET, APIKey=API_KEY, AudioFile=AudioFile)
+    wsParam = Param(APPID=APP_ID, APISecret=API_SECRET, APIKey=API_KEY, AudioFile='output.pcm')
 
     websocket.enableTrace(False)
     wsUrl = wsParam.create_url()
     ws = websocket.WebSocketApp(wsUrl, on_message=on_message, on_error=on_error, on_close=on_close, on_open=create_on_open(wsParam))
     ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
-    return jsonify({'transcription': res}), 200
+    return jsonify({'transcription': res[0]}), 200
     
 
 # if __name__ == "__main__":
